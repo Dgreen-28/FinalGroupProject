@@ -11,6 +11,9 @@
 #include <unistd.h>  
 #include <semaphore.h>
 #include <pthread.h>
+#include <sys/types.h> 
+
+#define TOTALMUTEX 3
 
 /*
 INPUTS:
@@ -25,16 +28,16 @@ INPUTS:
 struct threadStruct {
     char* occupation;
     int id;
-    long threadID;
+    int threadID;
 };
 
 void *patientThreadFunc();
 void *staffThreadFunc();
-void enterWaitingRoom();
+int enterWaitingRoom();
 void sitOnSofa();
 void getMedicalCheckup();
 void makePayment();
-void leaveClinic();
+void leaveClinic(struct threadStruct* contents);
 void waitForPatients();
 void performMedicalCheckup();
 void acceptPayment();
@@ -43,7 +46,7 @@ int successfulCheckups;
 int avgStaffWaitTime;
 int patientsLeft;
 int avgPatientsWaitTime;
-sem_t mutex;
+sem_t mutex[TOTALMUTEX];
 int totalRoomCapacity;
 int totalSofaCapacity;
 
@@ -51,7 +54,8 @@ int totalSofaCapacity;
 int main(int argc, char *argv[])
 {
     int medicalStaff, totalPatients, roomCapacity, sofaSpace, maxTimeInterval, checkupTime;
-    sem_init(&mutex, 0, 1);
+    
+    for (int i = 0; i < TOTALMUTEX; i++) sem_init(&mutex[i], 0, 1);
 
         //assigns the arguments to ints
     	medicalStaff = atoi(argv[1]);
@@ -83,9 +87,7 @@ int main(int argc, char *argv[])
         {
             
             contents[i].occupation = "Patient";
-            
             contents[i].id = i;
-            contents[i].threadID = (long)patientThread[i];
             pthread_create(&patientThread[i], NULL, &patientThreadFunc, (void*)&contents[i]);
         }
         for (int j = 0; j < medicalStaff; j++)
@@ -113,48 +115,77 @@ void *staffThreadFunc(void *vargp)
 void *patientThreadFunc(void *vargp)
 {
     struct threadStruct* contents = vargp;
-    printf("Occupation: %s\n", contents->occupation);
-    printf("Patient %d (Thread ID: %ld) Arrived to clinic\n", contents->id, contents->threadID);
-    enterWaitingRoom();
-    sitOnSofa();
-    getMedicalCheckup();
-    makePayment();
-    leaveClinic();
+    contents->threadID = (int)gettid();
+    printf("Patient %d (Thread ID: %d) Arrived to clinic\n", contents->id, contents->threadID);
+    
+    
+    if(enterWaitingRoom()){
+        sitOnSofa();
+        getMedicalCheckup();
+        makePayment();
+        leaveClinic(contents);
+    } else {
+        printf("Leaving without checkup.\n");
+    }
         return NULL;
 }
 
 //MARK: funcs used by used by patients
-void enterWaitingRoom()
+int enterWaitingRoom()
 {
-    
-    sem_wait(&mutex);
+    sem_wait(&mutex[0]);
 
     if (totalRoomCapacity > 0)
     {
         totalRoomCapacity--;
-        sem_post(&mutex);
+        printf("Current capacity: %d\n", totalRoomCapacity);
+        sem_post(&mutex[0]);
+        return 1;
     }
     else
     {
-        sem_post(&mutex);
-        leaveClinic();
+        sem_post(&mutex[0]);
+        return 0;
     }
 }
 void sitOnSofa()
 {
+    while(1){
+        sem_wait(&mutex[2]);
+
+        if (totalSofaCapacity > 0)
+        {
+            totalSofaCapacity--;
+            printf("Current sofa capacity: %d\n", totalSofaCapacity);
+            sem_post(&mutex[2]);
+            break;
+        }
+        sem_post(&mutex[2]);
+    }
     
     //TODO: setup
 }
 void getMedicalCheckup()
 {
+    sem_wait(&mutex[2]);
+    totalSofaCapacity++;
+    printf("Current sofa capacity: %d\n", totalSofaCapacity);
+    sem_post(&mutex[2]);
+    printf("Getting checkup\n");
+    sleep(1);
+    
     //TODO: setup
 }
 void makePayment()
 {
     //TODO: setup
 }
-void leaveClinic()
+void leaveClinic(struct threadStruct *contents)
 {
+    sem_wait(&mutex[1]);
+    totalRoomCapacity++;
+    sem_post(&mutex[1]);
+    printf("Patient %d (ThreadID: %d): Leaving the clinic after receiving checkup\n", contents->id, contents->threadID);
     //TODO: setup
 }
 
