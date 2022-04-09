@@ -1,14 +1,19 @@
-//Initial commit.
-//Corey Green.
-//3-23-22
+
+// GROUP D
+// By Corey Green
+// decoreyon.green@okstate.edu
+// CS 4323
+// finalGroupProject
+// 3-23-22
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>  
 #include <semaphore.h>
 #include <pthread.h>
+
 /*
 INPUTS:
-
 # of medical pros.
 # of total patients
 # patient capaity
@@ -40,9 +45,9 @@ int totalSofaCapacity;
 // allow command line args
 int main(int argc, char *argv[])
 {
-    //assigns the arguments to ints
     int medicalStaff, totalPatients, roomCapacity, sofaSpace, maxTimeInterval, checkupTime;
 
+        //assigns the arguments to ints
     	medicalStaff = atoi(argv[1]);
         totalPatients = atoi(argv[2]);
     	roomCapacity = atoi(argv[3]);
