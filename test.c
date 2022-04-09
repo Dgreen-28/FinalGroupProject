@@ -22,6 +22,11 @@ INPUTS:
 # patient checkup time
 */
 
+struct threadStruct {
+    char* occupation;
+    int id;
+    long threadID;
+};
 
 void *patientThreadFunc();
 void *staffThreadFunc();
@@ -46,6 +51,7 @@ int totalSofaCapacity;
 int main(int argc, char *argv[])
 {
     int medicalStaff, totalPatients, roomCapacity, sofaSpace, maxTimeInterval, checkupTime;
+    sem_init(&mutex, 0, 1);
 
         //assigns the arguments to ints
     	medicalStaff = atoi(argv[1]);
@@ -62,25 +68,33 @@ int main(int argc, char *argv[])
         pthread_t patientThread[totalPatients];
         pthread_t staffThread[medicalStaff];
 
+
+        struct threadStruct contents[totalPatients];
+
+
         //for loops for the creation and joining of patient and staff threads
         //TODO: put these into functions with int args.
         for (int j = 0; j < medicalStaff; j++)
         {
-        pthread_create(&staffThread[j], NULL, &staffThreadFunc, NULL);
-        printf("Medical Professional %d (Thread ID: %ld): Waiting for patient \n", j, (long)staffThread[j]);
+            pthread_create(&staffThread[j], NULL, &staffThreadFunc, NULL);
+            printf("Medical Professional %d (Thread ID: %ld): Waiting for patient \n", j, (long)staffThread[j]);
         }
         for (int i = 0; i < totalPatients; i++)
         {
-        pthread_create(&patientThread[i], NULL, &patientThreadFunc, NULL);
-        printf("Patient %d (Thread ID: %ld Arrived to clinic\n", i, (long)patientThread[i]);
+            
+            contents[i].occupation = "Patient";
+            
+            contents[i].id = i;
+            contents[i].threadID = (long)patientThread[i];
+            pthread_create(&patientThread[i], NULL, &patientThreadFunc, (void*)&contents[i]);
         }
         for (int j = 0; j < medicalStaff; j++)
         {
-        pthread_join(staffThread[j], NULL);
+            pthread_join(staffThread[j], NULL);
         }
         for (int i = 0; i < totalPatients; i++)
         {
-        pthread_join(patientThread[i], NULL);
+            pthread_join(patientThread[i], NULL);
         }
     
 
@@ -98,6 +112,9 @@ void *staffThreadFunc(void *vargp)
 }
 void *patientThreadFunc(void *vargp)
 {
+    struct threadStruct* contents = vargp;
+    printf("Occupation: %s\n", contents->occupation);
+    printf("Patient %d (Thread ID: %ld) Arrived to clinic\n", contents->id, contents->threadID);
     enterWaitingRoom();
     sitOnSofa();
     getMedicalCheckup();
@@ -109,6 +126,7 @@ void *patientThreadFunc(void *vargp)
 //MARK: funcs used by used by patients
 void enterWaitingRoom()
 {
+    
     sem_wait(&mutex);
 
     if (totalRoomCapacity > 0)
@@ -121,7 +139,6 @@ void enterWaitingRoom()
         sem_post(&mutex);
         leaveClinic();
     }
-    //print()
 }
 void sitOnSofa()
 {
