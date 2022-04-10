@@ -25,6 +25,12 @@ INPUTS:
 # patient checkup time
 */
 
+struct summary {
+    int successfulCheckups;
+    int medicalProAvgWaitTime;
+    int patientsThatLeft;
+    int patientsAvgWaitTime;
+};
 struct threadStruct {
     char* occupation;
     int id;
