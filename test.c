@@ -13,7 +13,7 @@
 #include <sys/types.h>
 #include <time.h>
 
-#define TOTALMUTEX 3
+#define TOTALMUTEX 4
 
 /*
 INPUTS:
@@ -57,12 +57,13 @@ int avgPatientsWaitTime;
 sem_t mutex[TOTALMUTEX];
 int totalRoomCapacity;
 int totalSofaCapacity;
+int checkupTime;
 
 // allow command line args
 int main(int argc, char *argv[])
 {
     srand(time(NULL));
-    int medicalStaff, totalPatients, roomCapacity, sofaSpace, maxTimeInterval, checkupTime;
+    int medicalStaff, totalPatients, roomCapacity, sofaSpace, maxTimeInterval;
 
     for (int i = 0; i < TOTALMUTEX; i++)
         sem_init(&mutex[i], 0, 1);
@@ -121,6 +122,7 @@ void *staffThreadFunc(void *vargp)
     struct threadStruct *contentsM = vargp;
     contentsM->threadID = pthread_self;
     waitForPatients(vargp);
+
     performMedicalCheckup();
     acceptPayment();
     return NULL;
@@ -194,6 +196,7 @@ void getMedicalCheckup(struct threadStruct *contents)
     totalSofaCapacity++;
     printf("Patient %d (ThreadID: %d): Getting checkup\n", contents->id, contents->threadID);
     printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
+    usleep(checkupTime * 1000);
     sem_post(&mutex[2]);
 
     // TODO: setup
