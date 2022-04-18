@@ -14,6 +14,7 @@
 #include <time.h>
 
 #define TOTALMUTEX 4
+#define TOTALCOUNT 1
 
 /*
 INPUTS:
@@ -55,6 +56,7 @@ int avgStaffWaitTime;
 int patientsLeft;
 int avgPatientsWaitTime;
 sem_t mutex[TOTALMUTEX];
+sem_t count[TOTALCOUNT];
 int totalRoomCapacity;
 int totalSofaCapacity;
 int checkupTime;
@@ -64,9 +66,6 @@ int main(int argc, char *argv[])
 {
     srand(time(NULL));
     int medicalStaff, totalPatients, roomCapacity, sofaSpace, maxTimeInterval;
-
-    for (int i = 0; i < TOTALMUTEX; i++)
-        sem_init(&mutex[i], 0, 1);
 
     // assigns the arguments to ints
     medicalStaff = atoi(argv[1]);
@@ -78,6 +77,12 @@ int main(int argc, char *argv[])
 
     totalRoomCapacity = roomCapacity;
     totalSofaCapacity = sofaSpace;
+    
+    // Initialze Semaphores
+    for (int i = 0; i < TOTALMUTEX; i++)
+        sem_init(&mutex[i], 0, 1);
+        
+    sem_init(&count[0], 0, totalSofaCapacity);
 
     // initializes threads for staff & patients
     pthread_t patientThread[totalPatients];
@@ -120,7 +125,7 @@ int main(int argc, char *argv[])
 void *staffThreadFunc(void *vargp)
 {
     struct threadStruct *contentsM = vargp;
-    contentsM->threadID = pthread_self;
+    contentsM->threadID = (int)gettid();
     waitForPatients(vargp);
 
     performMedicalCheckup();
@@ -130,7 +135,7 @@ void *staffThreadFunc(void *vargp)
 void *patientThreadFunc(void *vargp)
 {
     struct threadStruct *contents = vargp;
-    contents->threadID = pthread_self();
+    contents->threadID = (int)gettid();
 
     printf("Patient %d (Thread ID: %d) Arrived to clinic\n", contents->id, contents->threadID);
 
@@ -168,22 +173,23 @@ int enterWaitingRoom()
 }
 void sitOnSofa(struct threadStruct *contents)
 {
-    while (1)
-    {
-        sem_wait(&mutex[2]);
+    sem_wait(&mutex[2]);
 
-        if (totalSofaCapacity > 0)
-        {
+    if (totalSofaCapacity <= 0)
+    {
+        printf("Patient %d (ThreadID: %d): Standing in the waiting room\n", contents->id, contents->threadID);
+        printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
+    }
+    sem_post(&mutex[2]);
+    
+    while(1){
+        sem_wait(&mutex[2]);
+        if(totalSofaCapacity > 0){
             totalSofaCapacity--;
             printf("Patient %d (Thread ID: %d): Sitting on a sofa in the waiting room\n", contents->id, contents->threadID);
             printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
             sem_post(&mutex[2]);
             break;
-        }
-        else
-        {
-            printf("Patient %d (ThreadID: %d): Standing in the waiting room\n", contents->id, contents->threadID);
-            printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
         }
         sem_post(&mutex[2]);
     }
@@ -192,12 +198,12 @@ void sitOnSofa(struct threadStruct *contents)
 }
 void getMedicalCheckup(struct threadStruct *contents)
 {
-    sem_wait(&mutex[2]);
+    sem_wait(&mutex[3]);
     totalSofaCapacity++;
     printf("Patient %d (ThreadID: %d): Getting checkup\n", contents->id, contents->threadID);
     printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
     usleep(checkupTime * 1000);
-    sem_post(&mutex[2]);
+    sem_post(&mutex[3]);
 
     // TODO: setup
 }
