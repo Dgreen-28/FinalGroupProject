@@ -13,8 +13,17 @@
 #include <sys/types.h>
 #include <time.h>
 
-#define TOTALMUTEX 4
-#define TOTALCOUNT 2
+#define TOTALMUTEX 3
+
+/*
+INPUTS:
+# of medical pros.
+# of total patients
+# patient capaity
+# sofa space
+# max enter time interval
+# patient checkup time
+*/
 
 struct summary
 {
@@ -22,6 +31,12 @@ struct summary
     int medicalProAvgWaitTime;
     int patientsThatLeft;
     int patientsAvgWaitTime;
+};
+struct threadStruct
+{
+    char *occupation;
+    int id;
+    int threadID;
 };
 
 void *patientThreadFunc();
@@ -39,36 +54,18 @@ int successfulCheckups;
 int avgStaffWaitTime;
 int patientsLeft;
 int avgPatientsWaitTime;
-
+sem_t mutex[TOTALMUTEX];
 int totalRoomCapacity;
 int totalSofaCapacity;
-int initialRoomCapacity;
-int checkupTime;
-int patientID;
-int medicalID;
-
-sem_t mutex[TOTALMUTEX];
-sem_t count[TOTALCOUNT];
-
-struct patient
-{
-    int sofaWaitingTime;
-    int standingWaitingTime;
-    int id;
-    int threadID;
-};
-
-struct medicalProfessional
-{
-    int id;
-    int threadID;
-};
 
 // allow command line args
 int main(int argc, char *argv[])
 {
     srand(time(NULL));
-    int medicalStaff, totalPatients, roomCapacity, sofaSpace, maxTimeInterval;
+    int medicalStaff, totalPatients, roomCapacity, sofaSpace, maxTimeInterval, checkupTime;
+
+    for (int i = 0; i < TOTALMUTEX; i++)
+        sem_init(&mutex[i], 0, 1);
 
     // assigns the arguments to ints
     medicalStaff = atoi(argv[1]);
@@ -79,37 +76,31 @@ int main(int argc, char *argv[])
     checkupTime = atoi(argv[6]);
 
     totalRoomCapacity = roomCapacity;
-    initialRoomCapacity = roomCapacity;
     totalSofaCapacity = sofaSpace;
 
-    // Initialze Semaphores
-    for (int i = 0; i < TOTALMUTEX; i++)
-        sem_init(&mutex[i], 0, 1);
-
-    sem_init(&count[0], 0, 0);
-    sem_init(&count[1], 0, 0);
-
-    //  initializes threads for staff & patients
+    // initializes threads for staff & patients
     pthread_t patientThread[totalPatients];
     pthread_t staffThread[medicalStaff];
 
-    struct patient patients[totalPatients];
-    struct medicalProfessional medicalProfs[medicalStaff];
+    struct threadStruct contents[totalPatients];
+    struct threadStruct contentsM[medicalStaff];
 
     int ms = (rand() % maxTimeInterval) + 1;
     // for loops for the creation and joining of patient and staff threads
     // TODO: put these into functions with int args.
     for (int j = 0; j < medicalStaff; j++)
     {
-        medicalProfs[j].id = j;
-        pthread_create(&staffThread[j], NULL, &staffThreadFunc, (void *)&medicalProfs[j]);
+        contentsM[j].id = j;
+        pthread_create(&staffThread[j], NULL, &staffThreadFunc, (void *)&contentsM[j]);
     }
     for (int i = 0; i < totalPatients; i++)
     {
-        patients[i].id = i;
+
+        contents[i].occupation = "Patient";
+        contents[i].id = i;
 
         usleep(ms * 1000);
-        pthread_create(&patientThread[i], NULL, &patientThreadFunc, (void *)&patients[i]);
+        pthread_create(&patientThread[i], NULL, &patientThreadFunc, (void *)&contents[i]);
     }
     for (int j = 0; j < medicalStaff; j++)
     {
@@ -127,30 +118,30 @@ int main(int argc, char *argv[])
 
 void *staffThreadFunc(void *vargp)
 {
-    struct medicalProfessional *medicalProfs = vargp;
-    medicalProfs->threadID = (int)gettid();
+    struct threadStruct *contentsM = vargp;
+    contentsM->threadID = pthread_self;
     waitForPatients(vargp);
-    performMedicalCheckup(vargp);
+    performMedicalCheckup();
     acceptPayment();
     return NULL;
 }
 void *patientThreadFunc(void *vargp)
 {
-    struct patient *patients = vargp;
-    patients->threadID = (int)gettid();
+    struct threadStruct *contents = vargp;
+    contents->threadID = pthread_self();
 
-    printf("Patient %d (Thread ID: %d) Arrived to clinic\n", patients->id, patients->threadID);
+    printf("Patient %d (Thread ID: %d) Arrived to clinic\n", contents->id, contents->threadID);
 
     if (enterWaitingRoom())
     {
         sitOnSofa(vargp);
         getMedicalCheckup(vargp);
         makePayment();
-        leaveClinic(patients);
+        leaveClinic(contents);
     }
     else
     {
-        printf("Patient %d (Thread ID: %d): Leaving without checkup.\n", patients->id, patients->threadID);
+        printf("Patient %d (Thread ID: %d): Leaving without checkup.\n", contents->id, contents->threadID);
     }
     return NULL;
 }
@@ -158,7 +149,6 @@ void *patientThreadFunc(void *vargp)
 // MARK: funcs used by patients
 int enterWaitingRoom()
 {
-
     sem_wait(&mutex[0]);
 
     if (totalRoomCapacity > 0)
@@ -174,53 +164,37 @@ int enterWaitingRoom()
         return 0;
     }
 }
-void sitOnSofa(struct patient *patients)
+void sitOnSofa(struct threadStruct *contents)
 {
-    sem_wait(&mutex[1]);
-
-    if (totalSofaCapacity <= 0)
-    {
-        printf("Patient %d (ThreadID: %d): Standing in the waiting room\n", patients->id, patients->threadID);
-        printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
-    }
-    sem_post(&mutex[1]);
-
     while (1)
     {
-        sem_wait(&mutex[1]);
+        sem_wait(&mutex[2]);
+
         if (totalSofaCapacity > 0)
         {
             totalSofaCapacity--;
-            printf("Patient %d (Thread ID: %d): Sitting on a sofa in the waiting room\n", patients->id, patients->threadID);
+            printf("Patient %d (Thread ID: %d): Sitting on a sofa in the waiting room\n", contents->id, contents->threadID);
             printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
-            sem_post(&mutex[1]);
+            sem_post(&mutex[2]);
             break;
         }
-        sem_post(&mutex[1]);
+        else
+        {
+            printf("Patient %d (ThreadID: %d): Standing in the waiting room\n", contents->id, contents->threadID);
+            printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
+        }
+        sem_post(&mutex[2]);
     }
 
     // TODO: setup
 }
-void getMedicalCheckup(struct patient *patients)
+void getMedicalCheckup(struct threadStruct *contents)
 {
-    // sem_wait(&mutex[3]);
-    // totalSofaCapacity++;
-    // printf("Patient %d (ThreadID: %d): Getting checkup\n", patients->id, patients->threadID);
-    // printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
-    // usleep(checkupTime * 1000);
-    // sem_post(&mutex[3]);
-
-    sem_post(&count[0]);
-    sem_wait(&count[1]);
-    sem_wait(&mutex[1]);
-    patientID = patients->id;
+    sem_wait(&mutex[2]);
     totalSofaCapacity++;
-    totalRoomCapacity++;
-    printf("Patient %d (ThreadID: %d): Getting checkup\n", patients->id, patients->threadID);
+    printf("Patient %d (ThreadID: %d): Getting checkup\n", contents->id, contents->threadID);
     printf("-----Current sofa capacity: %d\n", totalSofaCapacity);
-    printf("-----Current room capacity: %d\n", totalRoomCapacity);
-    sem_post(&mutex[1]);
-    usleep(checkupTime * 1000);
+    sem_post(&mutex[2]);
 
     // TODO: setup
 }
@@ -228,34 +202,23 @@ void makePayment()
 {
     // TODO: setup
 }
-void leaveClinic(struct patient *patients)
+void leaveClinic(struct threadStruct *contents)
 {
-    sem_wait(&mutex[0]);
+    sem_wait(&mutex[1]);
     totalRoomCapacity++;
-    sem_post(&mutex[0]);
-    printf("Patient %d (ThreadID: %d): Leaving the clinic after receiving checkup\n", patients->id, patients->threadID);
+    sem_post(&mutex[1]);
+    printf("Patient %d (ThreadID: %d): Leaving the clinic after receiving checkup\n", contents->id, contents->threadID);
     // TODO: setup
 }
 
 // MARK: funcs used by staff
-void waitForPatients(struct medicalProfessional *medicalProfs)
+void waitForPatients(struct threadStruct *contentsM)
 {
-
-    // if (initialRoomCapacity == totalRoomCapacity)
-    // {
-    //     printf("Medical Professional %d (Thread ID: %d): Waiting for patient \n", medicalProfs->id, medicalProfs->threadID);
-    // }
-    printf("Medical Professional %d (Thread ID: %d): Waiting for patient \n", medicalProfs->id, medicalProfs->threadID);
-
+    printf("Medical Professional %d (Thread ID: %d): Waiting for patient \n", contentsM->id, contentsM->threadID);
     // TODO: setup
 }
-void performMedicalCheckup(struct medicalProfessional *medicalProfs)
+void performMedicalCheckup()
 {
-    sem_post(&count[1]);
-    sem_wait(&count[0]);
-    medicalID = medicalProfs->id;
-    printf("Medical Professional %d (Thread ID: %d): Checking Patient %d \n", medicalProfs->id, medicalProfs->threadID, patientID);
-    usleep(checkupTime * 1000);
     // TODO: setup
 }
 void acceptPayment()
