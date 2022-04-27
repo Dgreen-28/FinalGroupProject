@@ -105,6 +105,7 @@ int main(int argc, char *argv[])
         usleep(ms * 1000);
     }
     
+    // waits for all patients to finish
     while(1){
         pthread_mutex_lock(&mutex[9]);
         if (left >= totalPatients){
@@ -114,11 +115,12 @@ int main(int argc, char *argv[])
         pthread_mutex_unlock(&mutex[9]);
     }
     
+    // signal medical staff to finish
     for (int i = 0; i < medicalStaff; i++){
         sem_post(&count[0]);
     }
     
-    
+    // stop all threads
     for (int i = 0; i < totalPatients+medicalStaff; i++){
         struct task t = {
             .selector = 2
@@ -126,31 +128,42 @@ int main(int argc, char *argv[])
         queueTask(t);
     }
     
-
+    // join threads
     for (int i = 0; i < medicalStaff+totalPatients; i++){
         if (pthread_join(threads[i], NULL)){
             printf("Failed to join thread\n");
         }
     }
     
-    printf("Finished\n");
     
-        summary.patientsAvgWaitTime = summary.patientsAvgWaitTime/summary.successfulCheckups;
-        summary.medicalProAvgWaitTime = summary.medicalProAvgWaitTime/medicalStaff;
-        printf("Statistical Summary:\n");
-        printf("-------------------------------------------------------------------------------\n");
-        printf("Number of successful checkups: %d \n", summary.successfulCheckups);
-        printf("Average waiting time for Medical Professionals: %ld \n", summary.medicalProAvgWaitTime);
-        printf("Number of Patients that left: %d \n", summary.patientsThatLeft);
-        printf("Average wait time for patients: %ld \n", summary.patientsAvgWaitTime);
-        //TODO: change and label time values for Average wait time
+    // print summary
+    summary.patientsAvgWaitTime = summary.patientsAvgWaitTime/summary.successfulCheckups;
+    summary.medicalProAvgWaitTime = summary.medicalProAvgWaitTime/medicalStaff;
+    printf("Statistical Summary:\n");
+    printf("-------------------------------------------------------------------------------\n");
+    printf("Number of successful checkups: %d \n", summary.successfulCheckups);
+    printf("Average waiting time for Medical Professionals: %ld \n", summary.medicalProAvgWaitTime);
+    printf("Number of Patients that left: %d \n", summary.patientsThatLeft);
+    printf("Average wait time for patients: %ld \n", summary.patientsAvgWaitTime);
     
+    // destroy all mutexes
     for (int i = 0; i < 12; i++){
         pthread_mutex_destroy(&mutex[i]);
     }
+    
+    // destroy all semaphores
     for (int i = 0; i < 2; i++){
         sem_destroy(&count[i]);
     }
 
     return 0;
 }
+
+/*
+Reference:
+
+Title: Thread Pools with function pointers in C
+Author: codeVault
+Source Code: https://code-vault.net/lesson/w1h356t5vg:1610029047572
+
+*/
