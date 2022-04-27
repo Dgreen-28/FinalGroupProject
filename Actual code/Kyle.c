@@ -50,3 +50,4 @@ void acceptPayment(struct threadStruct *contents)
     pthread_mutex_unlock(&mutex[6]);
     pthread_mutex_unlock(&mutex[7]);
 }
+

@@ -1,9 +1,11 @@
 // GROUP D
-// By Corey Green
+// By Corey Green, Robby Hallock, and Kyle McCullough
 // decoreyon.green@okstate.edu
+// robert.hallock@okstate.edu
+// kymccul@okstate.edu
 // CS 4323
 // finalGroupProject
-// 3-23-22
+// 4-26-22
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -191,7 +193,7 @@ int main(int argc, char *argv[])
     // printf("medicalstaff = %d, totalPatients = %d, roomCapacity = %d, sofaSpace = %d, maxTimeInterval = %d, checkupTime = %d", medicalStaff, totalPatients, roomCapacity, sofaSpace, maxTimeInterval, checkupTime);
     for (int i = 0; i < medicalStaff+totalPatients; i++){
         if (pthread_create(&threads[i], NULL, &mainThreadLoop, NULL)){
-            perror("Failed to create");
+            printf("Failed to create thread\n");
         }
     }
     
@@ -241,20 +243,18 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < medicalStaff+totalPatients; i++){
         if (pthread_join(threads[i], NULL)){
-            perror("Failed to join");
+            perror("Failed to join thread\n");
         }
     }
-    
-    printf("Finished\n");
-    
+        
         summary.patientsAvgWaitTime = summary.patientsAvgWaitTime/summary.successfulCheckups;
         summary.medicalProAvgWaitTime = summary.medicalProAvgWaitTime/medicalStaff;
         printf("Statistical Summary:\n");
         printf("-------------------------------------------------------------------------------\n");
         printf("Number of successful checkups: %d \n", summary.successfulCheckups);
-        printf("Average waiting time for Medical Professionals: %ld \n", summary.medicalProAvgWaitTime);
+        printf("Average waiting time for Medical Professionals: %ldms \n", summary.medicalProAvgWaitTime);
         printf("Number of Patients that left: %d \n", summary.patientsThatLeft);
-        printf("Average wait time for patients: %ld \n", summary.patientsAvgWaitTime);
+        printf("Average wait time for patients: %ldms \n", summary.patientsAvgWaitTime);
         //TODO: change and label time values for Average wait time
     
     for (int i = 0; i < TOTALMUTEX; i++){
@@ -425,3 +425,12 @@ void acceptPayment(struct threadStruct *contents)
     pthread_mutex_unlock(&mutex[7]);
     
 }
+
+/*
+Reference:
+
+Title: Thread Pools with function pointers in C
+Author: codeVault
+Source Code: https://code-vault.net/lesson/w1h356t5vg:1610029047572
+
+*/

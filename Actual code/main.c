@@ -1,9 +1,11 @@
 // GROUP D
 // By Corey Green, Robby Hallock, and Kyle McCullough
 // decoreyon.green@okstate.edu
+// robert.hallock@okstate.edu
+// kymccul@okstate.edu
 // CS 4323
 // finalGroupProject
-// 3-23-22
+// 4-26-22
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,7 +56,7 @@ int main(int argc, char *argv[])
     maxPatients = totalPatients;
     
     // Initialize mutexes
-    for (int i = 0; i < TOTALMUTEX; i++)
+    for (int i = 0; i < 12; i++)
         pthread_mutex_init(&mutex[i], NULL);
         
     // Lock some mutexes for later
@@ -142,9 +144,9 @@ int main(int argc, char *argv[])
     printf("Statistical Summary:\n");
     printf("-------------------------------------------------------------------------------\n");
     printf("Number of successful checkups: %d \n", summary.successfulCheckups);
-    printf("Average waiting time for Medical Professionals: %ld \n", summary.medicalProAvgWaitTime);
+    printf("Average waiting time for Medical Professionals: %ldms \n", summary.medicalProAvgWaitTime);
     printf("Number of Patients that left: %d \n", summary.patientsThatLeft);
-    printf("Average wait time for patients: %ld \n", summary.patientsAvgWaitTime);
+    printf("Average wait time for patients: %ldms \n", summary.patientsAvgWaitTime);
     
     // destroy all mutexes
     for (int i = 0; i < 12; i++){

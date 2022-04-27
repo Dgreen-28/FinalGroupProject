@@ -34,14 +34,5 @@ void performMedicalCheckup();
  */
 void acceptPayment();
 
-struct task
-{
-    int selector;
-    struct threadStruct *args;
-};
 
-struct task queue[256];
-int remainingTasks;
-void queueTask(struct task task);
-struct task dequeue();
 #endif
