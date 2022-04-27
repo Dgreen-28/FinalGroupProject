@@ -1,3 +1,9 @@
+// GROUP D
+// By Corey Green
+// decoreyon.green@okstate.edu
+// CS 4323
+// finalGroupProject
+// 3-23-22
 #include "Robby.h"
 #include "Kyle.h"
 #include <stdio.h>
