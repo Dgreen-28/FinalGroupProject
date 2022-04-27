@@ -11,12 +11,28 @@
 #include "Robby.h"
 #include "Corey.h"
 
+/**
+ *   Prints out that medical professional # is waiting for a patient
+ *   struct threadStruct *contents is a pointer to the contents struct holding Medical Professional information.
+ */
 void waitForPatients();
+
+/**
+ *   Syncs up the performance of the medical checkup from a medical professional with the getting of the medical check up of the patient.
+ *   struct threadStruct *contents is a pointer to the contents struct holding Medical Professional information.
+ */
 void performMedicalCheckup();
+
+/**
+ *   Only allows one thread to accept payment from the patients. Prints out that the medical professional # accepts payment from patient #.
+ *   struct threadStruct *contents is a pointer to the contents struct holding Medical Professional information.
+ */
 void acceptPayment();
-struct task {
+
+struct task
+{
     int selector;
-    struct threadStruct* args;
+    struct threadStruct *args;
 };
 
 struct task queue[256];
