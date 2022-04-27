@@ -1,3 +1,9 @@
+// GROUP D
+// By Corey Green
+// decoreyon.green@okstate.edu
+// CS 4323
+// finalGroupProject
+// 4-26-22
 #ifndef COREY_H
 #define COREY_H
 
