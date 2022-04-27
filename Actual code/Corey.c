@@ -8,6 +8,12 @@
 #include <sys/types.h>
 #include <time.h>
 // func for leaving clinic
+/*
+ * Mutex set for one patient to leave at a time so no two patients get counted as one
+ * struct threadStruct *contents is a pointer to a stuct containing the patient information
+ * is succsessful is an int holding the number of successful pateints for the summary
+ */
+
 void leaveClinic(struct threadStruct *contents, int isSuccessful)
 {
     // mutex for keeping up with patients who left
@@ -35,6 +41,10 @@ void leaveClinic(struct threadStruct *contents, int isSuccessful)
     }
 }
 // func for medical checkup behavior
+/*
+ * Mutex set for one patient to get checkup at a time, similar to the leaveClinic func
+ * struct threadStruct *contents is a pointer to a stuct containing the patient information
+ */
 void getMedicalCheckup(struct threadStruct *contents)
 {
     int staffId;
@@ -62,6 +72,10 @@ void getMedicalCheckup(struct threadStruct *contents)
 
 }
 // func for making payment
+/*
+ * Mutex set setup to work as one register so that one patient pays at a time
+ * struct threadStruct *contents is a pointer to a stuct containing the patient information
+ */
 void makePayment(struct threadStruct *contents)
 {
     // mutex to insure one patient pays at a time
