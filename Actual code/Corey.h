@@ -10,7 +10,7 @@
 #include <time.h>
 #include "Robby.h"
 #include "Kyle.h"
-
+// struct to keep up with summary values
 struct summary
 {   
     int successfulCheckups;
