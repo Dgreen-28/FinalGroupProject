@@ -1,3 +1,8 @@
+// Kyle McCullough
+// Group D
+// kymcculk@okstate.edu
+// 3/2/2022
+
 #include "Robby.h"
 #include "Corey.h"
 #include <stdio.h>

@@ -1,3 +1,8 @@
+// Kyle McCullough
+// Group D
+// kymcculk@okstate.edu
+// 3/2/2022
+
 #ifndef KYLE_H
 #define KYLE_H
 
